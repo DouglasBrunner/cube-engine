@@ -5,6 +5,7 @@
   #include "WProgram.h"
 #endif
 
+
 /***********************************
  * BEGIN ENGINE SPECIFIC CODE
  **********************************/
@@ -73,7 +74,7 @@ void CubeEngine::setSpriteAttribute(int spriteNum, byte name, byte value) {
 
     // holds the bit-mask
     byte mask;
-
+   
     // Set state
     if (name == this->AN_STATE) {
 
@@ -145,6 +146,19 @@ void CubeEngine::setSpriteAttribute(int spriteNum, byte name, byte value) {
         mask = B11000111;
 
     }
+
+    // kill LED at current position is the attribute update is movement
+    if (name == this->AN_X || name == this->AN_Y || name == this->AN_Z) {
+      // Get current coordinates
+      int x = getSpriteAttribute(spriteNum, this->AN_X);
+      int y = getSpriteAttribute(spriteNum, this->AN_Y);
+      int z = getSpriteAttribute(spriteNum, this->AN_Z);
+  
+      // Turn off current LED
+      // This removes the need to manually sync the attribute and data arrays
+      // Since only one sprite can exist on an LED at a time we know that the LED must turn off
+      setLED(x, y, z, this->AV_OFF);
+    }
     
     // Set new attribute
     group = this->clearAttribute(spriteNum, groupNum, mask) | value;
@@ -197,6 +211,20 @@ void CubeEngine::writeSpriteAttribute(int spriteNum, int groupNum, byte group) {
 
     // Update sprite attributes
     sprites[spriteNum] = attributes;
+
+    if ((this->getSpriteAttribute(spriteNum, AN_VISIBILITY) == AV_VISIBLE)  &&
+      (this->getSpriteAttribute(spriteNum, AN_STATE) == AV_LIVE)) {
+         this->setLED(this->getSpriteAttribute(spriteNum, AN_X),
+          this->getSpriteAttribute(spriteNum, AN_Y), 
+          this->getSpriteAttribute(spriteNum, AN_Z), 
+          this->getSpriteAttribute(spriteNum, AN_COLOUR));
+      } else {
+        this->setLED(this->getSpriteAttribute(spriteNum, AN_X),
+          this->getSpriteAttribute(spriteNum, AN_Y), 
+          this->getSpriteAttribute(spriteNum, AN_Z), 
+          this->getSpriteAttribute(spriteNum, AN_COLOUR));
+      }
+
 
 }
 
@@ -423,16 +451,6 @@ byte CubeEngine::getGroup(int spriteNum, int groupNum) {
  */
 void CubeEngine::moveSprite(int spriteNum, byte direction) {
 
-    // Get current coordinates
-    int x = getSpriteAttribute(spriteNum, this->AN_X);
-    int y = getSpriteAttribute(spriteNum, this->AN_Y);
-    int z = getSpriteAttribute(spriteNum, this->AN_Z);
-
-    // Turn off current LED
-    // This removes the need to manually sync the attribute and data arrays
-    // Since only one sprite can exist on an LED at a time we know that the LED must turn off
-    setLED(y, z, x, this->AV_OFF);
-
     // Move the sprite
     if (direction == this->AV_UP) {
         this->moveY(spriteNum, this->AV_UP);
@@ -506,16 +524,6 @@ void CubeEngine::moveSprite(int spriteNum, byte direction) {
 
 
     }
-
-    this->runCollisionDetection(spriteNum);
-
-    // Get new position
-    int newX = getSpriteAttribute(spriteNum, this->AN_X);
-    int newY = getSpriteAttribute(spriteNum, this->AN_Y);
-    int newZ = getSpriteAttribute(spriteNum, this->AN_Z);
-
-    // Turn the sprite on at the new location
-    setLED(newY, newZ, newX, getSpriteAttribute(spriteNum, this->AN_COLOUR));
 
 }
 
@@ -1009,3 +1017,6 @@ void CubeEngine::killRegisters() {
 /***********************************
  * END HARDWARE SPECIFIC CODE
  **********************************/
+
+
+
